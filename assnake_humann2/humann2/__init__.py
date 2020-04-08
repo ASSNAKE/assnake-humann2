@@ -1,0 +1,1 @@
+from assnake_humann2.humann2.result import result
