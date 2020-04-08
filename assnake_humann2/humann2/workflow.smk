@@ -19,26 +19,27 @@ rule humann2:
                --input {params.merged} --output {params.wd} --threads {threads} \n
                rm {params.merged}''') 
 
-mapping = '/data5/bio/runs-jeniaole/tools/humann/data/humann2/kegg/kegg_idmapping.tsv'
-pathway = '/data5/bio/runs-jeniaole/tools/humann/data/humann2/kegg/keggc'
-custom_db = '/data5/bio/databases/humann2/custom/KEGG_FHM/kegg_fhm_db'
+mapping = '/data11/bio/databases/KEGG_HUMANN2_BREWED/legacy_kegg_idmapping.tsv'
+pathway = '/data11/bio/databases/KEGG_HUMANN2_BREWED/keggc'
+custom_db = '/data11/bio/databases/KEGG_HUMANN2_BREWED/BIOCAD_custom_db'
 
 rule humann2_custom_kegg:
     input:
         r1 = '{fs_prefix}/{df}/reads/{preproc}/{df_sample}_R1.fastq.gz',
         r2 = '{fs_prefix}/{df}/reads/{preproc}/{df_sample}_R2.fastq.gz',
-        mp2 = '{fs_prefix}/{df}/taxa/{preproc}/mp2__def/{df_sample}/{df_sample}.mp2'
+        mp2 = '{fs_prefix}/{df}/taxa/mp2__def__v2.96.1/{database}/{df_sample}/{preproc}/{df_sample}.mp2'
     output:
-        gf = '{fs_prefix}/{df}/humann2/KEGG/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
-        pc = '{fs_prefix}/{df}/humann2/KEGG/{df_sample}/{preproc}/{df_sample}_pathcoverage.tsv',
-        pa = '{fs_prefix}/{df}/humann2/KEGG/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv'
+        gf = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
+        pc = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_pathcoverage.tsv',
+        pa = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv'
     params:
-        wd =     '{fs_prefix}/{df}/humann2/KEGG/{df_sample}/{preproc}/',
-        merged = '{fs_prefix}/{df}/humann2/KEGG/{df_sample}/{preproc}/{df_sample}.fastq.gz'
+        wd =     '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/',
+        merged = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}.fastq.gz'
     threads: 12
-    conda: "../../envs/humann2.yml"
-    shell: ('''cat {input.r1} {input.r2} > {params.merged} \n 
-               humann2 --taxonomic-profile {input.mp2} \
+    # conda: "../../envs/humann2.yml"
+    shell: ('''cat {input.r1} {input.r2} > {params.merged};\n
+                source activate humann2;\n
+               humann2\
                --id-mapping {mapping} --pathways-database {pathway} \
                --protein-database {custom_db} --bypass-nucleotide-search \
                --input {params.merged} --output {params.wd} --threads {threads} \n

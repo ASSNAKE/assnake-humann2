@@ -13,20 +13,18 @@ additional_options = [
         )
 ]
 
-
-
-@click.command('trimmomatic', short_help='Quality based trimming')
+@click.command('humann2', short_help='Functional profiling')
 
 @add_options(sample_set_construction_options)
-@add_options(additional_options)
+# @add_options(additional_options)
 @click.pass_obj
-def trimmomatic_invocation(config, **kwargs):
+def humann2_invocation(config, **kwargs):
     print(config['requested_results'])
 
-    wc_str = '{fs_prefix}/{df}/reads/{preproc}__tmtic_{params}/{df_sample}_R1.fastq.gz'
+    wc_str = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv'
     sample_set, sample_set_name = generic_command_individual_samples(config,  **kwargs)
     config['requests'] += generate_result_list(sample_set, wc_str, **kwargs)
-    config['requested_results'] += [{'result': 'trimmomatic', 'sample_set': sample_set, 'preprocessing': True, 'preprocessing_addition': 'tmtic_'+kwargs['params']}]
+    config['requested_results'] += [{'result': 'humann2', 'sample_set': sample_set}]
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
-result = Result.from_location(name = 'trimmomatic', location = this_dir, input_type = 'illumina_sample', additional_inputs = None, invocation_command = trimmomatic_invocation)
+result = Result.from_location(name = 'humann2', location = this_dir, input_type = 'illumina_sample', additional_inputs = None, invocation_command = humann2_invocation)
