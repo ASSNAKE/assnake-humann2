@@ -1,3 +1,5 @@
+import os
+
 rule humann2:
     input:
         r1 = '{fs_prefix}/{df}/reads/{preproc}/{df_sample}_R1.fastq.gz',
@@ -21,46 +23,49 @@ rule humann2:
 
 mapping = '/data11/bio/databases/KEGG_HUMANN2_BREWED/legacy_kegg_idmapping.tsv'
 pathway = '/data11/bio/databases/KEGG_HUMANN2_BREWED/keggc'
-custom_db = '/data11/bio/databases/KEGG_HUMANN2_BREWED/BIOCAD_custom_db'
+custom_db = '/data11/bio/databases/KEGG_HUMANN2_BREWED/'
 
 rule humann2_custom_kegg:
     input:
         r1 = '{fs_prefix}/{df}/reads/{preproc}/{df_sample}_R1.fastq.gz',
         r2 = '{fs_prefix}/{df}/reads/{preproc}/{df_sample}_R2.fastq.gz',
-        mp2 = '{fs_prefix}/{df}/taxa/mp2__def__v2.96.1/v296_CHOCOPhlAn_201901/{df_sample}/{preproc}/{df_sample}.mp2'
+        mp2 = '{fs_prefix}/{df}/taxa/mp2__def__v2.96.1/v296_CHOCOPhlAn_201901/{df_sample}/{preproc}/{df_sample}.mp2',
+        protein_db_dir = os.path.join(custom_db, '{protein_db}')
     output:
-        gf = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
-        pc = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_pathcoverage.tsv',
-        pa = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv'
+        gf = '{fs_prefix}/{df}/humann2__v2.9__test1/{protein_db}__bypass/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
+        pc = '{fs_prefix}/{df}/humann2__v2.9__test1/{protein_db}__bypass/{df_sample}/{preproc}/{df_sample}_pathcoverage.tsv',
+        pa = '{fs_prefix}/{df}/humann2__v2.9__test1/{protein_db}__bypass/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv'
     params:
-        wd =     '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/',
-        merged = '{fs_prefix}/{df}/humann2__v2.9__test1/KEGG_BIOCAD__bypass/{df_sample}/{preproc}/{df_sample}.fastq.gz'
-    threads: 40
+        wd =     '{fs_prefix}/{df}/humann2__v2.9__test1/{protein_db}__bypass/{df_sample}/{preproc}/',
+        merged = '{fs_prefix}/{df}/humann2__v2.9__test1/{protein_db}__bypass/{df_sample}/{preproc}/{df_sample}.fastq.gz'
+    threads: 8
     # conda: "../../envs/humann2.yml"
     shell: ('''cat {input.r1} {input.r2} > {params.merged};\n
                 set +eu;source activate humann2;\n
                humann2\
                --id-mapping {mapping} --pathways-database {pathway} \
-               --protein-database {custom_db} --bypass-nucleotide-search \
+               --protein-database {input.protein_db_dir} --bypass-nucleotide-search \
                --input {params.merged} --output {params.wd} --threads {threads} \n
                rm {params.merged};\n
                set -eu;''') 
         
 rule humann2_regroup:
     input:
-        gf = '{fs_prefix}/{df}/humann2/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
+        gf = '{fs_prefix}/{df}/humann2/{protein_db}__{nucl_db}/{df_sample}/{preproc}/{df_sample}_genefamilies.tsv',
     output:
-        gf = '{fs_prefix}/{df}/humann2/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}__{groups}.tsv',
+        gf = '{fs_prefix}/{df}/humann2/{protein_db}__{nucl_db}/{df_sample}/{preproc}/{df_sample}__{groups}.tsv',
     conda: "../../envs/humann2.yml"
-    shell: ('''humann2_regroup_table -i {input.gf} -o {output} --custom /data5/bio/databases/humann2/ut_mapping/utility_mapping/{wildcards.groups}.txt.gz''') 
+    shell: ('''humann2_regroup_table -i {input.gf} -o {output} --custom /data11/bio/databases/HUMANN2/utility_mapping/{wildcards.groups}.txt.gz''') 
         
 rule humann2_norm:
     input:
-        gf = '{fs_prefix}/{df}/humann2/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}_{groups}.tsv',
+        gf = '{fs_prefix}/{df}/humann2__v2.9__test1/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}_pathabundance.tsv',
     output:
-        norm = '{fs_prefix}/{df}/humann2/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}_{groups}__norm.tsv'
-    conda: "../../envs/humann2.yml"
-    shell: ('''humann2_renorm_table --input {input.gf} --units relab --output {output.norm}''') 
+        norm = '{fs_prefix}/{df}/humann2__v2.9__test1/{db_nucl}__{db_protein}/{df_sample}/{preproc}/{df_sample}_pathabundance__cpm.tsv'
+    # conda: "../../envs/humann2.yml" 
+    shell: ('''set +eu;source activate humann2;\n
+        humann2_renorm_table --input {input.gf} --units cpm --output {output.norm};\n
+        set -eu;''') 
 
         
 # /data5/bio/runs-jeniaole/tools/humann/data/humann2/kegg
